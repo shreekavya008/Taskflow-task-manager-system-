@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% block title %}Analytics — TaskFlow{% endblock %}
+{% block page_title %}Analytics{% endblock %}
+ 
+{% block content %}
+<div class="profile-page">
+ 
+  <div class="profile-hero">
+    <div class="profile-avatar-lg"><i class="fa-solid fa-user"></i></div>
+    <div class="profile-info">
+      <h2>My Productivity</h2>
+      <p>Track your progress and stay consistent</p>
+    </div>
+    <div class="profile-stats-row" id="profileStats"></div>
+  </div>
+ 
+  <div class="analytics-grid">
+ 
+    <!-- Heatmap -->
+    <section class="analytics-card wide">
+      <h3><i class="fa-solid fa-fire"></i> Activity Heatmap</h3>
+      <p class="card-sub">Tasks completed per day (last 6 months)</p>
+      <div class="heatmap-container">
+        <div class="heatmap-months" id="heatmapMonths"></div>
+        <div class="heatmap-grid" id="heatmapGrid"></div>
+        <div class="heatmap-legend">
+          <span>Less</span>
+          <div class="legend-cells">
+            <div class="h-cell" data-level="0"></div>
+            <div class="h-cell" data-level="1"></div>
+            <div class="h-cell" data-level="2"></div>
+            <div class="h-cell" data-level="3"></div>
+            <div class="h-cell" data-level="4"></div>
+          </div>
+          <span>More</span>
+        </div>
+      </div>
+    </section>
+ 
+    <!-- Monthly bar -->
+    <section class="analytics-card">
+      <h3><i class="fa-solid fa-chart-bar"></i> Monthly Overview</h3>
+      <p class="card-sub">Tasks completed per month</p>
+      <div class="bar-chart" id="monthlyChart"></div>
+    </section>
+ 
+    <!-- Priority breakdown -->
+    <section class="analytics-card">
+      <h3><i class="fa-solid fa-chart-pie"></i> Priority Breakdown</h3>
+      <p class="card-sub">All tasks by priority level</p>
+      <div class="donut-wrap">
+        <canvas id="priorityDonut" width="160" height="160"></canvas>
+        <div class="donut-legend" id="donutLegend"></div>
+      </div>
+    </section>
+ 
+  </div>
+</div>
+ 
+<script>
+document.addEventListener('DOMContentLoaded', loadAnalytics);
+ 
+async function loadAnalytics() {
+  const [stats, activity, tasks] = await Promise.all([
+    fetch('/api/stats').then(r=>r.json()),
+    fetch('/api/activity').then(r=>r.json()),
+    fetch('/api/tasks').then(r=>r.json())
+  ]);
+ 
+  // Profile stats
+  document.getElementById('profileStats').innerHTML = `
+    <div class="ps-item"><span class="ps-num">${stats.total}</span><span class="ps-label">Total Tasks</span></div>
+    <div class="ps-item"><span class="ps-num">${stats.completed}</span><span class="ps-label">Completed</span></div>
+    <div class="ps-item"><span class="ps-num">${stats.completion_rate}%</span><span class="ps-label">Success Rate</span></div>
+    <div class="ps-item"><span class="ps-num">${stats.overdue}</span><span class="ps-label">Overdue</span></div>
+  `;
+ 
+  buildHeatmap(activity);
+  buildMonthly(activity);
+  buildDonut(tasks);
+}
+ 
+function buildHeatmap(activity) {
+  const today = new Date();
+  const start = new Date(today);
+  start.setDate(start.getDate() - 182);
+ 
+  // align to Sunday
+  while (start.getDay() !== 0) start.setDate(start.getDate() - 1);
+ 
+  const grid = document.getElementById('heatmapGrid');
+  const monthsEl = document.getElementById('heatmapMonths');
+  grid.innerHTML = '';
+  let html = '';
+  let monthHtml = '';
+  let weekIndex = 0;
+ 
+  const months = {};
+  let d = new Date(start);
+ 
+  while (d <= today) {
+    const key = d.toISOString().split('T')[0];
+    const count = activity[key] || 0;
+    const level = count === 0 ? 0 : count === 1 ? 1 : count <= 3 ? 2 : count <= 5 ? 3 : 4;
+ 
+    if (d.getDate() <= 7 && d.getDay() === 0) {
+      months[weekIndex] = d.toLocaleString('default', {month:'short'});
+    }
+ 
+    html += `<div class="h-cell" data-level="${level}" title="${key}: ${count} tasks"></div>`;
+    d.setDate(d.getDate() + 1);
+    if (d.getDay() === 0) weekIndex++;
+  }
+ 
+  grid.innerHTML = html;
+ 
+  // Months labels
+  const totalWeeks = weekIndex + 1;
+  let mHtml = '';
+  for (let w = 0; w <= totalWeeks; w++) {
+    mHtml += `<span style="grid-column:${w+1}">${months[w]||''}</span>`;
+  }
+  monthsEl.innerHTML = mHtml;
+  monthsEl.style.gridTemplateColumns = `repeat(${totalWeeks}, 14px)`;
+  grid.style.gridTemplateColumns = `repeat(${totalWeeks}, 14px)`;
+}
+ 
+function buildMonthly(activity) {
+  const monthly = {};
+  Object.entries(activity).forEach(([d, v]) => {
+    const m = d.slice(0,7);
+    monthly[m] = (monthly[m]||0) + v;
+  });
+  const sorted = Object.entries(monthly).sort().slice(-6);
+  if (!sorted.length) { document.getElementById('monthlyChart').innerHTML = '<p class="empty-state">No data yet</p>'; return; }
+ 
+  const max = Math.max(...sorted.map(([,v])=>v));
+  document.getElementById('monthlyChart').innerHTML = `
+    <div class="bar-group">
+      ${sorted.map(([m, v]) => {
+        const label = new Date(m+'-01').toLocaleString('default',{month:'short',year:'2-digit'});
+        return `<div class="bar-item">
+          <div class="bar-fill" style="height:${max?Math.round(v/max*120):0}px" title="${v} tasks"></div>
+          <div class="bar-val">${v}</div>
+          <div class="bar-label">${label}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+ 
+function buildDonut(tasks) {
+  const counts = {high:0, medium:0, low:0};
+  tasks.forEach(t => counts[t.priority]++);
+  const total = tasks.length;
+  const colors = {high:'#ef4444', medium:'#f59e0b', low:'#10b981'};
+ 
+  const canvas = document.getElementById('priorityDonut');
+  const ctx = canvas.getContext('2d');
+  const cx = 80, cy = 80, r = 60, ir = 40;
+ 
+  let startAngle = -Math.PI/2;
+  const entries = Object.entries(counts);
+  entries.forEach(([p, v]) => {
+    if (!v) return;
+    const angle = (v/total) * 2 * Math.PI;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, startAngle, startAngle + angle);
+    ctx.closePath();
+    ctx.fillStyle = colors[p];
+    ctx.fill();
+    startAngle += angle;
+  });
+ 
+  // donut hole
+  ctx.beginPath();
+  ctx.arc(cx, cy, ir, 0, 2*Math.PI);
+  ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--card-bg') || '#fff';
+  ctx.fill();
+ 
+  // center text
+  ctx.fillStyle = '#64748b';
+  ctx.font = 'bold 20px DM Sans';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(total, cx, cy);
+ 
+  document.getElementById('donutLegend').innerHTML = entries.map(([p,v]) => `
+    <div class="legend-item">
+      <span class="legend-dot" style="background:${colors[p]}"></span>
+      <span>${p} (${v})</span>
+    </div>`).join('');
+}
+</script>
+{% endblock %}
+ 

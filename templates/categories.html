@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}Categories — TaskFlow{% endblock %}
+{% block page_title %}Categories{% endblock %}
+ 
+{% block content %}
+<div class="categories-page">
+ 
+  <div class="page-header">
+    <p class="page-subtitle">Organise your tasks into custom folders</p>
+    <button class="btn-primary" onclick="openCatModal()">
+      <i class="fa-solid fa-plus"></i> New Category
+    </button>
+  </div>
+ 
+  <div class="cat-grid" id="catGrid">
+    <div class="loading-tasks"><i class="fa-solid fa-spinner fa-spin"></i> Loading…</div>
+  </div>
+</div>
+ 
+<!-- Category Modal -->
+<div class="modal-overlay" id="catModalOverlay">
+  <div class="modal sm-modal" id="catModal">
+    <div class="modal-header">
+      <h3 id="catModalTitle">New Category</h3>
+      <button class="modal-close" onclick="closeCatModal()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="catId"/>
+      <div class="form-group">
+        <label>Category Name</label>
+        <input type="text" id="catName" placeholder="e.g. Mathematics" class="form-input"/>
+      </div>
+      <div class="form-group">
+        <label>Color</label>
+        <div class="color-palette" id="colorPalette"></div>
+      </div>
+      <div class="form-group">
+        <label>Icon</label>
+        <div class="icon-grid" id="iconGrid"></div>
+      </div>
+      <button class="btn-primary full" onclick="saveCategory()">Save Category</button>
+    </div>
+  </div>
+</div>
+ 
+<script>
+const COLORS = ['#6366f1','#f59e0b','#10b981','#ef4444','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f97316','#84cc16'];
+const ICONS = ['folder','briefcase','book','code','dumbbell','heart','star','flag','rocket','graduation-cap','calculator','flask','music','palette','camera','globe','home','coffee'];
+ 
+let selectedColor = COLORS[0];
+let selectedIcon = ICONS[0];
+ 
+document.addEventListener('DOMContentLoaded', () => {
+  renderColorPalette();
+  renderIconGrid();
+  loadCategories();
+});
+ 
+function renderColorPalette() {
+  document.getElementById('colorPalette').innerHTML = COLORS.map(c => `
+    <button class="color-swatch ${c===selectedColor?'active':''}" style="background:${c}"
+      onclick="selectColor('${c}')" data-color="${c}"></button>`).join('');
+}
+ 
+function renderIconGrid() {
+  document.getElementById('iconGrid').innerHTML = ICONS.map(i => `
+    <button class="icon-btn ${i===selectedIcon?'active':''}" onclick="selectIcon('${i}')" data-icon="${i}">
+      <i class="fa-solid fa-${i}"></i></button>`).join('');
+}
+ 
+function selectColor(c) {
+  selectedColor = c;
+  renderColorPalette();
+}
+function selectIcon(i) {
+  selectedIcon = i;
+  renderIconGrid();
+}
+ 
+async function loadCategories() {
+  const cats = await fetch('/api/categories').then(r=>r.json());
+  const el = document.getElementById('catGrid');
+  if (!cats.length) {
+    el.innerHTML = `<div class="empty-page"><i class="fa-solid fa-folder-open"></i><p>No categories yet</p></div>`;
+    return;
+  }
+  el.innerHTML = cats.map(c => `
+    <div class="cat-card" style="--cat-color:${c.color}">
+      <div class="cat-card-top">
+        <div class="cat-icon-wrap"><i class="fa-solid fa-${c.icon}"></i></div>
+        <div class="cat-actions">
+          <button onclick="editCat(${c.id},'${c.name}','${c.color}','${c.icon}')" title="Edit"><i class="fa-solid fa-pen"></i></button>
+          <button onclick="deleteCat(${c.id})" title="Delete"><i class="fa-solid fa-trash"></i></button>
+        </div>
+      </div>
+      <h3 class="cat-name">${c.name}</h3>
+      <div class="cat-progress-wrap">
+        <div class="cat-progress-bar">
+          <div class="cat-progress-fill" style="width:${c.task_count ? Math.round(c.completed_count/c.task_count*100) : 0}%"></div>
+        </div>
+        <span>${c.completed_count}/${c.task_count} done</span>
+      </div>
+      <a href="/tasks?cat=${c.id}" class="btn-ghost sm full-w mt">View Tasks</a>
+    </div>`).join('') + `
+    <button class="cat-card add-card" onclick="openCatModal()">
+      <i class="fa-solid fa-plus"></i>
+      <span>New Category</span>
+    </button>`;
+}
+ 
+function openCatModal(id, name, color, icon) {
+  document.getElementById('catModalOverlay').classList.add('open');
+  document.getElementById('catId').value = '';
+  document.getElementById('catName').value = '';
+  document.getElementById('catModalTitle').textContent = 'New Category';
+  selectedColor = COLORS[0]; selectedIcon = ICONS[0];
+  renderColorPalette(); renderIconGrid();
+}
+ 
+function editCat(id, name, color, icon) {
+  document.getElementById('catModalOverlay').classList.add('open');
+  document.getElementById('catModalTitle').textContent = 'Edit Category';
+  document.getElementById('catId').value = id;
+  document.getElementById('catName').value = name;
+  selectedColor = color; selectedIcon = icon;
+  renderColorPalette(); renderIconGrid();
+}
+ 
+function closeCatModal() {
+  document.getElementById('catModalOverlay').classList.remove('open');
+}
+ 
+async function saveCategory() {
+  const id = document.getElementById('catId').value;
+  const name = document.getElementById('catName').value.trim();
+  if (!name) { showToast('Please enter a category name', 'error'); return; }
+ 
+  const body = {name, color: selectedColor, icon: selectedIcon};
+  const url = id ? `/api/categories/${id}` : '/api/categories';
+  const method = id ? 'PUT' : 'POST';
+ 
+  await fetch(url, {method, headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+  showToast(id ? 'Category updated!' : 'Category created!', 'success');
+  closeCatModal();
+  loadCategories();
+}
+ 
+async function deleteCat(id) {
+  if (!confirm('Delete this category and all its tasks?')) return;
+  await fetch(`/api/categories/${id}`, {method:'DELETE'});
+  showToast('Category deleted', 'info');
+  loadCategories();
+}
+</script>
+{% endblock %}
+ 

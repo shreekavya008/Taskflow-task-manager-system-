@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — TaskFlow{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+ 
+{% block content %}
+<div class="dashboard-grid">
+ 
+  <!-- Stats Row -->
+  <section class="stats-row" id="statsRow">
+    <div class="stat-card" data-color="indigo">
+      <div class="stat-icon"><i class="fa-solid fa-list-check"></i></div>
+      <div class="stat-info">
+        <span class="stat-num" id="stat-total">0</span>
+        <span class="stat-label">Total Tasks</span>
+      </div>
+    </div>
+    <div class="stat-card" data-color="amber">
+      <div class="stat-icon"><i class="fa-solid fa-clock"></i></div>
+      <div class="stat-info">
+        <span class="stat-num" id="stat-pending">0</span>
+        <span class="stat-label">Pending</span>
+      </div>
+    </div>
+    <div class="stat-card" data-color="emerald">
+      <div class="stat-icon"><i class="fa-solid fa-circle-check"></i></div>
+      <div class="stat-info">
+        <span class="stat-num" id="stat-completed">0</span>
+        <span class="stat-label">Completed</span>
+      </div>
+    </div>
+    <div class="stat-card" data-color="rose">
+      <div class="stat-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+      <div class="stat-info">
+        <span class="stat-num" id="stat-overdue">0</span>
+        <span class="stat-label">Overdue</span>
+      </div>
+    </div>
+  </section>
+ 
+  <!-- Two-col layout -->
+  <div class="dash-columns">
+ 
+    <!-- Left: Upcoming Tasks -->
+    <section class="dash-section">
+      <div class="section-header">
+        <h2>Upcoming Tasks</h2>
+        <button class="btn-primary sm" onclick="openTaskModal()"><i class="fa-solid fa-plus"></i> Add Task</button>
+      </div>
+      <div class="task-list" id="upcomingTasks">
+        <div class="loading-tasks"><i class="fa-solid fa-spinner fa-spin"></i> Loading…</div>
+      </div>
+    </section>
+ 
+    <!-- Right: Categories + Due Today -->
+    <div class="dash-right">
+      <section class="dash-section">
+        <div class="section-header">
+          <h2>Categories</h2>
+          <a href="/categories" class="btn-ghost sm">View All</a>
+        </div>
+        <div class="category-chips" id="dashCategories"></div>
+      </section>
+ 
+      <section class="dash-section">
+        <div class="section-header">
+          <h2>Due Today</h2>
+          <span class="badge-count" id="dueTodayCount">0</span>
+        </div>
+        <div class="task-list compact" id="dueTodayList"></div>
+      </section>
+ 
+      <section class="dash-section">
+        <div class="section-header">
+          <h2>Progress</h2>
+        </div>
+        <div class="progress-ring-wrap">
+          <svg class="progress-ring" width="120" height="120">
+            <circle class="progress-ring-bg" cx="60" cy="60" r="50"/>
+            <circle class="progress-ring-fill" id="progressRing" cx="60" cy="60" r="50"
+              stroke-dasharray="314" stroke-dashoffset="314"/>
+          </svg>
+          <div class="progress-label"><span id="progressPct">0%</span><small>Complete</small></div>
+        </div>
+      </section>
+    </div>
+  </div>
+ 
+</div>
+ 
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  loadDashboard();
+});
+ 
+async function loadDashboard() {
+  const [stats, tasks, cats] = await Promise.all([
+    fetch('/api/stats').then(r=>r.json()),
+    fetch('/api/tasks?status=pending').then(r=>r.json()),
+    fetch('/api/categories').then(r=>r.json())
+  ]);
+ 
+  // Stats
+  document.getElementById('stat-total').textContent = stats.total;
+  document.getElementById('stat-pending').textContent = stats.pending;
+  document.getElementById('stat-completed').textContent = stats.completed;
+  document.getElementById('stat-overdue').textContent = stats.overdue;
+ 
+  // Progress ring
+  const pct = stats.completion_rate;
+  document.getElementById('progressPct').textContent = pct + '%';
+  const circumference = 314;
+  document.getElementById('progressRing').style.strokeDashoffset = circumference - (pct / 100) * circumference;
+ 
+  // Upcoming tasks (next 7 days + overdue)
+  const today = new Date(); today.setHours(0,0,0,0);
+  const next7 = new Date(today); next7.setDate(next7.getDate()+7);
+  const upcoming = tasks.filter(t => {
+    if (!t.deadline) return false;
+    const d = new Date(t.deadline);
+    return d <= next7;
+  }).slice(0, 8);
+ 
+  const upEl = document.getElementById('upcomingTasks');
+  upEl.innerHTML = upcoming.length ? upcoming.map(t => renderTaskCard(t)).join('') : '<p class="empty-state">No upcoming deadlines 🎉</p>';
+ 
+  // Due today
+  const dueToday = tasks.filter(t => t.days_left === 0);
+  document.getElementById('dueTodayCount').textContent = dueToday.length;
+  const dtEl = document.getElementById('dueTodayList');
+  dtEl.innerHTML = dueToday.length ? dueToday.map(t => renderTaskCard(t, true)).join('') : '<p class="empty-state">Nothing due today</p>';
+ 
+  // Categories
+  const catEl = document.getElementById('dashCategories');
+  catEl.innerHTML = cats.slice(0,6).map(c => `
+    <a href="/tasks?cat=${c.id}" class="cat-chip" style="--cat-color:${c.color}">
+      <i class="fa-solid fa-${c.icon}"></i>
+      <span>${c.name}</span>
+      <span class="chip-count">${c.task_count}</span>
+    </a>`).join('') + `<a href="/categories" class="cat-chip add-cat"><i class="fa-solid fa-plus"></i><span>Add</span></a>`;
+}
+ 
+function renderTaskCard(t, compact=false) {
+  const dl = t.deadline ? new Date(t.deadline + 'T00:00:00') : null;
+  const dlStr = dl ? dl.toLocaleDateString('en-US',{month:'short',day:'numeric'}) : 'No deadline';
+  const urgency = t.days_left !== null ? (t.days_left < 0 ? 'overdue' : t.days_left === 0 ? 'today' : t.days_left <= 2 ? 'soon' : '') : '';
+  return `
+  <div class="task-card ${urgency}" data-id="${t.id}">
+    <button class="task-check ${t.status}" onclick="toggleTask(${t.id})" title="Toggle complete">
+      <i class="fa-solid fa-${t.status==='completed'?'circle-check':'circle'}"></i>
+    </button>
+    <div class="task-body">
+      <span class="task-title ${t.status}">${t.title}</span>
+      ${!compact ? `<span class="task-meta">
+        <span class="priority-dot ${t.priority}"></span>${t.priority}
+        ${t.category_name ? `· <span style="color:${t.category_color}">${t.category_name}</span>` : ''}
+      </span>` : ''}
+    </div>
+    <span class="task-deadline ${urgency}">
+      <i class="fa-regular fa-calendar"></i> ${dlStr}
+    </span>
+  </div>`;
+}
+ 
+async function toggleTask(id) {
+  await fetch(`/api/tasks/${id}/toggle`, {method:'POST'});
+  loadDashboard();
+  window.loadNotifications && loadNotifications();
+}
+</script>
+{% endblock %}
+ 

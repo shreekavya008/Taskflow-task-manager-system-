@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}TaskFlow{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}"/>
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+ 
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon"><i class="fa-solid fa-bolt"></i></div>
+    <span class="brand-name">TaskFlow</span>
+  </div>
+ 
+  <nav class="sidebar-nav">
+    <a href="/" class="nav-item {% if request.path == '/' %}active{% endif %}">
+      <i class="fa-solid fa-house"></i><span>Dashboard</span>
+    </a>
+    <a href="/tasks" class="nav-item {% if request.path == '/tasks' %}active{% endif %}">
+      <i class="fa-solid fa-list-check"></i><span>All Tasks</span>
+    </a>
+    <a href="/categories" class="nav-item {% if request.path == '/categories' %}active{% endif %}">
+      <i class="fa-solid fa-folder-open"></i><span>Categories</span>
+    </a>
+    <a href="/profile" class="nav-item {% if request.path == '/profile' %}active{% endif %}">
+      <i class="fa-solid fa-chart-line"></i><span>Analytics</span>
+    </a>
+  </nav>
+ 
+  <div class="sidebar-footer">
+    <div class="sidebar-stats" id="sidebar-stats">
+      <div class="stat-pill"><span id="sb-pending">0</span> Pending</div>
+      <div class="stat-pill completed"><span id="sb-done">0</span> Done</div>
+    </div>
+  </div>
+</aside>
+ 
+<!-- Top Bar -->
+<header class="topbar">
+  <button class="menu-toggle" id="menuToggle"><i class="fa-solid fa-bars"></i></button>
+  <div class="topbar-title">{% block page_title %}Dashboard{% endblock %}</div>
+  <div class="topbar-right">
+    <button class="notif-btn" id="notifBtn" title="Notifications">
+      <i class="fa-solid fa-bell"></i>
+      <span class="notif-badge" id="notifBadge" style="display:none">0</span>
+    </button>
+    <a href="/profile" class="profile-avatar" title="Profile">
+      <i class="fa-solid fa-user"></i>
+    </a>
+  </div>
+</header>
+ 
+<!-- Notification Dropdown -->
+<div class="notif-dropdown" id="notifDropdown">
+  <div class="notif-header">
+    <span>Reminders</span>
+    <button onclick="document.getElementById('notifDropdown').classList.remove('open')" class="close-notif"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div class="notif-list" id="notifList"><p class="no-notif">No upcoming deadlines</p></div>
+</div>
+ 
+<!-- Main Content -->
+<main class="main-content">
+  {% block content %}{% endblock %}
+</main>
+ 
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <h3 id="modalTitle">New Task</h3>
+      <button class="modal-close" id="modalClose"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+ 
+<!-- Toast -->
+<div class="toast-container" id="toastContainer"></div>
+ 
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>
+ 

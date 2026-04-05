@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}Tasks — TaskFlow{% endblock %}
+{% block page_title %}All Tasks{% endblock %}
+ 
+{% block content %}
+<div class="tasks-page">
+ 
+  <!-- Toolbar -->
+  <div class="tasks-toolbar">
+    <div class="filter-group">
+      <select id="filterStatus" onchange="loadTasks()">
+        <option value="">All Status</option>
+        <option value="pending">Pending</option>
+        <option value="completed">Completed</option>
+      </select>
+      <select id="filterCategory" onchange="loadTasks()">
+        <option value="">All Categories</option>
+      </select>
+      <select id="filterPriority" onchange="loadTasks()">
+        <option value="">All Priority</option>
+        <option value="high">High</option>
+        <option value="medium">Medium</option>
+        <option value="low">Low</option>
+      </select>
+    </div>
+    <div class="toolbar-right">
+      <div class="search-wrap">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="searchInput" placeholder="Search tasks…" oninput="filterLocal()"/>
+      </div>
+      <button class="btn-primary" onclick="openTaskModal()">
+        <i class="fa-solid fa-plus"></i> New Task
+      </button>
+    </div>
+  </div>
+ 
+  <!-- Task Grid -->
+  <div class="task-grid" id="taskGrid">
+    <div class="loading-tasks"><i class="fa-solid fa-spinner fa-spin"></i> Loading…</div>
+  </div>
+</div>
+ 
+<script>
+let allTasks = [];
+ 
+// Pre-select category from URL param
+const urlCat = new URLSearchParams(location.search).get('cat');
+ 
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadCategories();
+  if (urlCat) document.getElementById('filterCategory').value = urlCat;
+  loadTasks();
+});
+ 
+async function loadCategories() {
+  const cats = await fetch('/api/categories').then(r=>r.json());
+  const sel = document.getElementById('filterCategory');
+  cats.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c.id; o.textContent = c.name;
+    sel.appendChild(o);
+  });
+}
+ 
+async function loadTasks() {
+  const status = document.getElementById('filterStatus').value;
+  const cat = document.getElementById('filterCategory').value;
+  const priority = document.getElementById('filterPriority').value;
+  let url = '/api/tasks?';
+  if (status) url += `status=${status}&`;
+  if (cat) url += `category_id=${cat}&`;
+  if (priority) url += `priority=${priority}&`;
+ 
+  allTasks = await fetch(url).then(r=>r.json());
+  filterLocal();
+}
+ 
+function filterLocal() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const filtered = q ? allTasks.filter(t => t.title.toLowerCase().includes(q) || (t.description||'').toLowerCase().includes(q)) : allTasks;
+  renderTaskGrid(filtered);
+}
+ 
+function renderTaskGrid(tasks) {
+  const el = document.getElementById('taskGrid');
+  if (!tasks.length) {
+    el.innerHTML = `<div class="empty-page"><i class="fa-solid fa-inbox"></i><p>No tasks found</p><button class="btn-primary" onclick="openTaskModal()">Create your first task</button></div>`;
+    return;
+  }
+  el.innerHTML = tasks.map(t => renderCard(t)).join('');
+}
+ 
+function renderCard(t) {
+  const dl = t.deadline ? new Date(t.deadline+'T00:00:00') : null;
+  const dlStr = dl ? dl.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}) : 'No deadline';
+  const urgency = t.days_left!==null ? (t.days_left<0?'overdue':t.days_left===0?'today':t.days_left<=2?'soon':'') : '';
+ 
+  return `
+  <div class="task-card-full ${t.status} ${urgency}" data-id="${t.id}">
+    <div class="tcf-top">
+      <div class="tcf-left">
+        <button class="task-check ${t.status}" onclick="toggle(${t.id})">
+          <i class="fa-solid fa-${t.status==='completed'?'circle-check':'circle'}"></i>
+        </button>
+        <div>
+          <div class="tcf-title ${t.status}">${t.title}</div>
+          ${t.category_name ? `<span class="tcf-cat" style="background:${t.category_color}22;color:${t.category_color}">
+            <i class="fa-solid fa-tag"></i> ${t.category_name}</span>` : '<span class="tcf-cat general"><i class="fa-solid fa-inbox"></i> General</span>'}
+        </div>
+      </div>
+      <span class="priority-badge ${t.priority}">${t.priority}</span>
+    </div>
+ 
+    ${t.description ? `<p class="tcf-desc">${t.description}</p>` : ''}
+ 
+    <div class="tcf-footer">
+      <span class="tcf-date ${urgency}"><i class="fa-regular fa-calendar"></i> ${dlStr}
+        ${urgency==='overdue'?'<span class="urgent-tag">Overdue</span>':urgency==='today'?'<span class="urgent-tag today">Today!</span>':urgency==='soon'?'<span class="urgent-tag soon">Soon</span>':''}
+      </span>
+      <div class="tcf-actions">
+        ${t.file_name ? `<a href="/uploads/${t.file_path}" title="${t.file_name}" class="action-btn" target="_blank"><i class="fa-solid fa-paperclip"></i></a>` : ''}
+        <button class="action-btn edit" onclick="editTask(${t.id})" title="Edit"><i class="fa-solid fa-pen"></i></button>
+        <button class="action-btn del" onclick="deleteTask(${t.id})" title="Delete"><i class="fa-solid fa-trash"></i></button>
+      </div>
+    </div>
+  </div>`;
+}
+ 
+async function toggle(id) {
+  await fetch(`/api/tasks/${id}/toggle`, {method:'POST'});
+  loadTasks();
+}
+ 
+async function editTask(id) {
+  const task = allTasks.find(t=>t.id===id);
+  if (task) openTaskModal(task);
+}
+ 
+async function deleteTask(id) {
+  if (!confirm('Delete this task?')) return;
+  await fetch(`/api/tasks/${id}`, {method:'DELETE'});
+  showToast('Task deleted', 'info');
+  loadTasks();
+}
+</script>
+{% endblock %}
+ 
