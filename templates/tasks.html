@@ -87,7 +87,42 @@ function renderTaskGrid(tasks) {
     el.innerHTML = `<div class="empty-page"><i class="fa-solid fa-inbox"></i><p>No tasks found</p><button class="btn-primary" onclick="openTaskModal()">Create your first task</button></div>`;
     return;
   }
-  el.innerHTML = tasks.map(t => renderCard(t)).join('');
+  
+  // Separate pending and completed tasks
+  const pending = tasks.filter(t => t.status === 'pending');
+  const completed = tasks.filter(t => t.status === 'completed');
+  
+  let html = '';
+  
+  // Render pending tasks section
+  if (pending.length > 0) {
+    html += `<div class="task-section">
+      <div class="section-header">
+        <i class="fa-solid fa-circle-check"></i>
+        <span>Active Tasks</span>
+        <span class="task-count">${pending.length}</span>
+      </div>
+      <div class="task-group">
+        ${pending.map(t => renderCard(t)).join('')}
+      </div>
+    </div>`;
+  }
+  
+  // Render completed tasks section
+  if (completed.length > 0) {
+    html += `<div class="task-section completed-section">
+      <div class="section-header completed">
+        <i class="fa-solid fa-check-double"></i>
+        <span>Completed</span>
+        <span class="task-count">${completed.length}</span>
+      </div>
+      <div class="task-group completed-group">
+        ${completed.map(t => renderCard(t)).join('')}
+      </div>
+    </div>`;
+  }
+  
+  el.innerHTML = html;
 }
  
 function renderCard(t) {

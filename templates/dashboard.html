@@ -84,12 +84,23 @@
       </section>
     </div>
   </div>
+
+  <!-- Calendar Section -->
+  <section class="dash-section calendar-section">
+    <div class="section-header">
+      <h2>Calendar - <span id="calendarMonth"></span></h2>
+    </div>
+    <div class="calendar-wrap">
+      <div class="calendar-grid" id="calendarGrid"></div>
+    </div>
+  </section>
  
 </div>
  
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   loadDashboard();
+  loadCalendar();
 });
  
 async function loadDashboard() {
@@ -164,7 +175,82 @@ function renderTaskCard(t, compact=false) {
 async function toggleTask(id) {
   await fetch(`/api/tasks/${id}/toggle`, {method:'POST'});
   loadDashboard();
+  loadCalendar();
   window.loadNotifications && loadNotifications();
+}
+
+async function loadCalendar() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  
+  // Update month/year display
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('calendarMonth').textContent = `${monthNames[month]} ${year}`;
+  
+  // Fetch all tasks
+  const allTasks = await fetch('/api/tasks').then(r=>r.json());
+  
+  // Build map of dates with their task statuses
+  const dateMap = {};
+  allTasks.forEach(t => {
+    if (t.deadline) {
+      const d = new Date(t.deadline + 'T00:00:00');
+      if (d.getFullYear() === year && d.getMonth() === month) {
+        const day = d.getDate();
+        if (!dateMap[day]) dateMap[day] = { completed: 0, overdue: 0, pending: 0 };
+        if (t.status === 'completed') dateMap[day].completed++;
+        else if (t.days_left < 0) dateMap[day].overdue++;
+        else dateMap[day].pending++;
+      }
+    }
+  });
+  
+  // Get first day of month and number of days
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const today = new Date(); today.setHours(0,0,0,0);
+  
+  // Build calendar HTML
+  const dayLabels = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  let html = `<div class="calendar-day-labels">${dayLabels.map(d => `<div class="day-label">${d}</div>`).join('')}</div>`;
+  
+  // Empty cells before first day
+  html += '<div class="calendar-days">';
+  for (let i = 0; i < firstDay; i++) {
+    html += '<div class="calendar-day empty"></div>';
+  }
+  
+  // Days of month
+  for (let day = 1; day <= daysInMonth; day++) {
+    const cellDate = new Date(year, month, day);
+    cellDate.setHours(0,0,0,0);
+    const info = dateMap[day] || { completed: 0, overdue: 0, pending: 0 };
+    const isToday = cellDate.getTime() === today.getTime();
+    let statusClass = '';
+    let statusIcon = '';
+    
+    if (info.overdue > 0) {
+      statusClass = 'overdue';
+      statusIcon = '<i class="fa-solid fa-exclamation-circle"></i>';
+    } else if (info.completed > 0 && info.pending === 0 && info.overdue === 0) {
+      statusClass = 'complete';
+      statusIcon = '<i class="fa-solid fa-check-circle"></i>';
+    } else if (info.pending > 0 || info.completed > 0) {
+      statusClass = 'active';
+      statusIcon = `<span class="task-indicator">${info.pending || info.completed}</span>`;
+    }
+    
+    html += `<div class="calendar-day ${statusClass} ${isToday ? 'today' : ''}">
+      <div class="day-number">${day}</div>
+      ${statusIcon}
+      ${info.completed > 0 ? `<span class="task-badge completed">${info.completed}</span>` : ''}
+      ${info.pending > 0 ? `<span class="task-badge pending">${info.pending}</span>` : ''}
+    </div>`;
+  }
+  
+  html += '</div>';
+  document.getElementById('calendarGrid').innerHTML = html;
 }
 </script>
 {% endblock %}
