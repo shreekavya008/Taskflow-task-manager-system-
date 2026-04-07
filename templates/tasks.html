@@ -5,9 +5,20 @@
 {% block content %}
 <div class="tasks-page">
  
-  <!-- Toolbar -->
-  <div class="tasks-toolbar">
-    <div class="filter-group">
+  <!-- Search Bar Section (Centered & Prominent) -->
+  <div class="search-section">
+    <div class="search-container">
+      <div class="search-wrap-large">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="searchInput" placeholder="Search your tasks…" oninput="filterLocal()"/>
+      </div>
+      <button class="btn-primary btn-new-task" onclick="openTaskModal()">
+        <i class="fa-solid fa-plus"></i> New Task
+      </button>
+    </div>
+    
+    <!-- Filters -->
+    <div class="filter-group-horizontal">
       <select id="filterStatus" onchange="loadTasks()">
         <option value="">All Status</option>
         <option value="pending">Pending</option>
@@ -22,15 +33,6 @@
         <option value="medium">Medium</option>
         <option value="low">Low</option>
       </select>
-    </div>
-    <div class="toolbar-right">
-      <div class="search-wrap">
-        <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="text" id="searchInput" placeholder="Search tasks…" oninput="filterLocal()"/>
-      </div>
-      <button class="btn-primary" onclick="openTaskModal()">
-        <i class="fa-solid fa-plus"></i> New Task
-      </button>
     </div>
   </div>
  

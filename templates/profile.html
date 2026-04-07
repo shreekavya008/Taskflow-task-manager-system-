@@ -1,120 +1,447 @@
 {% extends "base.html" %}
-{% block title %}Analytics — TaskFlow{% endblock %}
-{% block page_title %}Analytics{% endblock %}
- 
+{% block title %}Profile — TaskFlow{% endblock %}
+{% block page_title %}Profile & Settings{% endblock %}
+
 {% block content %}
-<div class="profile-page">
- 
-  <div class="profile-hero">
-    <div class="profile-avatar-lg"><i class="fa-solid fa-user"></i></div>
-    <div class="profile-info">
-      <h2>My Productivity</h2>
-      <p>Track your progress and stay consistent</p>
-    </div>
-    <div class="profile-stats-row" id="profileStats"></div>
+<div class="profile-and-settings-container">
+  
+  <!-- Tabs Navigation -->
+  <div class="profile-tabs">
+    <button class="tab-btn active" data-tab="analytics">
+      <i class="fa-solid fa-chart-line"></i> Analytics
+    </button>
+    <button class="tab-btn" data-tab="login">
+      <i class="fa-solid fa-sign-in"></i> Account
+    </button>
+    <button class="tab-btn" data-tab="settings">
+      <i class="fa-solid fa-sliders"></i> Settings
+    </button>
   </div>
- 
-  <div class="analytics-grid">
- 
-    <!-- Heatmap -->
-    <section class="analytics-card wide">
-      <h3><i class="fa-solid fa-fire"></i> Activity Heatmap</h3>
-      <p class="card-sub">Tasks completed per day (last 6 months)</p>
-      <div class="heatmap-container">
-        <div class="heatmap-months" id="heatmapMonths"></div>
-        <div class="heatmap-grid" id="heatmapGrid"></div>
-        <div class="heatmap-legend">
-          <span>Less</span>
-          <div class="legend-cells">
-            <div class="h-cell" data-level="0"></div>
-            <div class="h-cell" data-level="1"></div>
-            <div class="h-cell" data-level="2"></div>
-            <div class="h-cell" data-level="3"></div>
-            <div class="h-cell" data-level="4"></div>
+
+  <!-- ═════════════════ ANALYTICS TAB ═════════════════ -->
+  <div class="tab-content active" id="analytics-tab">
+    <div class="profile-page">
+
+      <div class="profile-hero">
+        <div class="profile-avatar-lg"><i class="fa-solid fa-user"></i></div>
+        <div class="profile-info">
+          <h2>My Productivity</h2>
+          <p>Track your progress and stay consistent</p>
+        </div>
+        <div class="profile-stats-row" id="profileStats"></div>
+      </div>
+
+      <div class="analytics-grid">
+
+        <!-- Heatmap -->
+        <section class="analytics-card wide">
+          <h3><i class="fa-solid fa-fire"></i> Activity Heatmap</h3>
+          <p class="card-sub">Tasks completed per day (last 6 months)</p>
+          <div class="heatmap-container">
+            <div class="heatmap-months" id="heatmapMonths"></div>
+            <div class="heatmap-grid" id="heatmapGrid"></div>
+            <div class="heatmap-legend">
+              <span>Less</span>
+              <div class="legend-cells">
+                <div class="h-cell" data-level="0"></div>
+                <div class="h-cell" data-level="1"></div>
+                <div class="h-cell" data-level="2"></div>
+                <div class="h-cell" data-level="3"></div>
+                <div class="h-cell" data-level="4"></div>
+              </div>
+              <span>More</span>
+            </div>
           </div>
-          <span>More</span>
+        </section>
+
+        <!-- Monthly bar -->
+        <section class="analytics-card">
+          <h3><i class="fa-solid fa-chart-bar"></i> Monthly Overview</h3>
+          <p class="card-sub">Tasks completed per month</p>
+          <div class="bar-chart" id="monthlyChart"></div>
+        </section>
+
+        <!-- Priority breakdown -->
+        <section class="analytics-card">
+          <h3><i class="fa-solid fa-chart-pie"></i> Priority Breakdown</h3>
+          <p class="card-sub">All tasks by priority level</p>
+          <div class="donut-wrap">
+            <canvas id="priorityDonut" width="160" height="160"></canvas>
+            <div class="donut-legend" id="donutLegend"></div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ═════════════════ LOGIN/ACCOUNT TAB ═════════════════ -->
+  <div class="tab-content" id="login-tab">
+    <div class="login-container">
+      <div class="login-form-wrapper">
+        <!-- Form Toggler -->
+        <div class="form-toggle">
+          <button class="toggle-btn active" data-form="login-form">Sign In</button>
+          <button class="toggle-btn" data-form="signup-form">Sign Up</button>
+        </div>
+
+        <!-- Login Form -->
+        <div class="login-form active" id="login-form">
+          <div class="form-header">
+            <h2><i class="fa-solid fa-sign-in"></i> Welcome Back</h2>
+            <p>Your competitive coding journey awaits</p>
+          </div>
+          <form class="auth-form">
+            <div class="form-group">
+              <label for="login-email">Email Address</label>
+              <input type="email" id="login-email" placeholder="codecer@taskflow.dev" required>
+              <i class="form-icon fa-solid fa-envelope"></i>
+            </div>
+            <div class="form-group">
+              <label for="login-password">Password</label>
+              <input type="password" id="login-password" placeholder="••••••••" required>
+              <i class="form-icon fa-solid fa-lock"></i>
+              <button type="button" class="show-pwd-btn" onclick="togglePassword('login-password')">
+                <i class="fa-solid fa-eye"></i>
+              </button>
+            </div>
+            <div class="form-options">
+              <label>
+                <input type="checkbox"> Remember me
+              </label>
+              <a href="#" class="forgot-password">Forgot password?</a>
+            </div>
+            <button type="submit" class="btn btn-primary btn-login">Sign In</button>
+            <div class="divider">or continue with</div>
+            <div class="social-auth">
+              <button type="button" class="social-btn github">
+                <i class="fa-brands fa-github"></i> GitHub
+              </button>
+              <button type="button" class="social-btn google">
+                <i class="fa-brands fa-google"></i> Google
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Signup Form -->
+        <div class="login-form" id="signup-form">
+          <div class="form-header">
+            <h2><i class="fa-solid fa-star"></i> Join TaskFlow</h2>
+            <p>Start your competitive coding journey</p>
+          </div>
+          <form class="auth-form">
+            <div class="form-group">
+              <label for="signup-name">Full Name</label>
+              <input type="text" id="signup-name" placeholder="John Doe" required>
+              <i class="form-icon fa-solid fa-user"></i>
+            </div>
+            <div class="form-group">
+              <label for="signup-email">Email Address</label>
+              <input type="email" id="signup-email" placeholder="you@example.com" required>
+              <i class="form-icon fa-solid fa-envelope"></i>
+            </div>
+            <div class="form-group">
+              <label for="signup-username">CodeChef Handle</label>
+              <input type="text" id="signup-username" placeholder="your_codechef_username" required>
+              <i class="form-icon fa-solid fa-code"></i>
+            </div>
+            <div class="form-group">
+              <label for="signup-password">Password</label>
+              <input type="password" id="signup-password" placeholder="••••••••" required>
+              <i class="form-icon fa-solid fa-lock"></i>
+              <button type="button" class="show-pwd-btn" onclick="togglePassword('signup-password')">
+                <i class="fa-solid fa-eye"></i>
+              </button>
+            </div>
+            <div class="form-group">
+              <label for="signup-confirm">Confirm Password</label>
+              <input type="password" id="signup-confirm" placeholder="••••••••" required>
+              <i class="form-icon fa-solid fa-lock"></i>
+              <button type="button" class="show-pwd-btn" onclick="togglePassword('signup-confirm')">
+                <i class="fa-solid fa-eye"></i>
+              </button>
+            </div>
+            <div class="form-options">
+              <label>
+                <input type="checkbox" required> I agree to the terms and privacy policy
+              </label>
+            </div>
+            <button type="submit" class="btn btn-primary btn-login">Create Account</button>
+            <div class="divider">or sign up with</div>
+            <div class="social-auth">
+              <button type="button" class="social-btn github">
+                <i class="fa-brands fa-github"></i> GitHub
+              </button>
+              <button type="button" class="social-btn google">
+                <i class="fa-brands fa-google"></i> Google
+              </button>
+            </div>
+          </form>
         </div>
       </div>
-    </section>
- 
-    <!-- Monthly bar -->
-    <section class="analytics-card">
-      <h3><i class="fa-solid fa-chart-bar"></i> Monthly Overview</h3>
-      <p class="card-sub">Tasks completed per month</p>
-      <div class="bar-chart" id="monthlyChart"></div>
-    </section>
- 
-    <!-- Priority breakdown -->
-    <section class="analytics-card">
-      <h3><i class="fa-solid fa-chart-pie"></i> Priority Breakdown</h3>
-      <p class="card-sub">All tasks by priority level</p>
-      <div class="donut-wrap">
-        <canvas id="priorityDonut" width="160" height="160"></canvas>
-        <div class="donut-legend" id="donutLegend"></div>
+
+      <!-- Right side illustration/info -->
+      <div class="login-sidebar">
+        <div class="login-card highlight">
+          <i class="fa-solid fa-bolt"></i>
+          <h3>Level Up Your Skills</h3>
+          <p>Track your competitive programming progress and master coding challenges</p>
+        </div>
+        <div class="login-card">
+          <i class="fa-solid fa-chart-line"></i>
+          <h3>Real-time Analytics</h3>
+          <p>Monitor your performance with detailed insights and statistics</p>
+        </div>
+        <div class="login-card">
+          <i class="fa-solid fa-users"></i>
+          <h3>Community</h3>
+          <p>Connect with fellow coders and participate in contests</p>
+        </div>
       </div>
-    </section>
- 
+    </div>
   </div>
+
+  <!-- ═════════════════ SETTINGS TAB ═════════════════ -->
+  <div class="tab-content" id="settings-tab">
+    <div class="settings-container">
+      <div class="settings-section">
+        <div class="section-header">
+          <h3><i class="fa-solid fa-palette"></i> Appearance</h3>
+        </div>
+        <div class="settings-group">
+          <div class="setting-item">
+            <div class="setting-info">
+              <h4>Theme Mode</h4>
+              <p>Choose your preferred color scheme</p>
+            </div>
+            <div class="theme-options">
+              <button class="theme-option active" data-theme="light">
+                <i class="fa-solid fa-sun"></i>
+                <span>Light</span>
+              </button>
+              <button class="theme-option" data-theme="dark">
+                <i class="fa-solid fa-moon"></i>
+                <span>Dark</span>
+              </button>
+              <button class="theme-option" data-theme="auto">
+                <i class="fa-solid fa-circle-half-stroke"></i>
+                <span>Auto</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <h4>Accent Color</h4>
+              <p>Customize your interface color</p>
+            </div>
+            <div class="color-palette">
+              <button class="color-option active" style="--accent-color: #6366f1;" title="Indigo"></button>
+              <button class="color-option" style="--accent-color: #8b5cf6;" title="Purple"></button>
+              <button class="color-option" style="--accent-color: #ec4899;" title="Pink"></button>
+              <button class="color-option" style="--accent-color: #ef4444;" title="Red"></button>
+              <button class="color-option" style="--accent-color: #f59e0b;" title="Amber"></button>
+              <button class="color-option" style="--accent-color: #10b981;" title="Green"></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="section-header">
+          <h3><i class="fa-solid fa-bell"></i> Notifications</h3>
+        </div>
+        <div class="settings-group">
+          <div class="setting-item">
+            <div class="setting-info">
+              <h4>Task Reminders</h4>
+              <p>Get notified about upcoming deadlines</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" checked>
+              <span class="switch-slider"></span>
+            </label>
+          </div>
+          <div class="setting-item">
+            <div class="setting-info">
+              <h4>Email Notifications</h4>
+              <p>Receive email updates about your account</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox">
+              <span class="switch-slider"></span>
+            </label>
+          </div>
+          <div class="setting-item">
+            <div class="setting-info">
+              <h4>Weekly Digest</h4>
+              <p>Get a summary of your weekly progress</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" checked>
+              <span class="switch-slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="section-header">
+          <h3><i class="fa-solid fa-lock"></i> Privacy & Security</h3>
+        </div>
+        <div class="settings-group">
+          <div class="setting-item">
+            <div class="setting-info">
+              <h4>Profile Visibility</h4>
+              <p>Control who can see your profile</p>
+            </div>
+            <select class="settings-select">
+              <option>Public</option>
+              <option>Private</option>
+              <option>Friends Only</option>
+            </select>
+          </div>
+          <div class="setting-item">
+            <div class="setting-info">
+              <h4>Two-Factor Authentication</h4>
+              <p>Add an extra layer of security</p>
+            </div>
+            <button class="btn btn-secondary">Enable 2FA</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="section-header">
+          <h3><i class="fa-solid fa-download"></i> Data</h3>
+        </div>
+        <div class="settings-group">
+          <div class="setting-item">
+            <div class="setting-info">
+              <h4>Export Data</h4>
+              <p>Download all your tasks and settings</p>
+            </div>
+            <button class="btn btn-secondary">Export as CSV</button>
+          </div>
+          <div class="setting-item">
+            <div class="setting-info">
+              <h4>Delete Account</h4>
+              <p class="danger-text">Permanently delete your account and data</p>
+            </div>
+            <button class="btn btn-danger">Delete Account</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
  
+
 <script>
+// ═════════════════ TAB SWITCHING ═════════════════
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tabName = btn.dataset.tab;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(tabName + '-tab')?.classList.add('active');
+  });
+});
+
+// ═════════════════ FORM TOGGLING ═════════════════
+document.querySelectorAll('.toggle-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const formId = btn.dataset.form;
+    document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.login-form').forEach(f => f.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(formId).classList.add('active');
+  });
+});
+
+// ═════════════════ THEME SETTINGS ═════════════════
+document.querySelectorAll('.theme-option').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const theme = btn.dataset.theme;
+    document.querySelectorAll('.theme-option').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    localStorage.setItem('taskflow-theme', theme);
+    applyTheme(theme);
+  });
+});
+
+// ═════════════════ ACCENT COLOR ═════════════════
+document.querySelectorAll('.color-option').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const color = getComputedStyle(btn).getPropertyValue('--accent-color').trim();
+    document.querySelectorAll('.color-option').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.documentElement.style.setProperty('--indigo', color);
+    localStorage.setItem('taskflow-color', color);
+  });
+});
+
+// ═════════════════ ANALYTICS FUNCTIONS ═════════════════
 document.addEventListener('DOMContentLoaded', loadAnalytics);
- 
+
+function togglePassword(inputId) {
+  const input = document.getElementById(inputId);
+  input.type = input.type === 'password' ? 'text' : 'password';
+}
+
 async function loadAnalytics() {
   const [stats, activity, tasks] = await Promise.all([
     fetch('/api/stats').then(r=>r.json()),
     fetch('/api/activity').then(r=>r.json()),
     fetch('/api/tasks').then(r=>r.json())
   ]);
- 
-  // Profile stats
+
   document.getElementById('profileStats').innerHTML = `
     <div class="ps-item"><span class="ps-num">${stats.total}</span><span class="ps-label">Total Tasks</span></div>
     <div class="ps-item"><span class="ps-num">${stats.completed}</span><span class="ps-label">Completed</span></div>
     <div class="ps-item"><span class="ps-num">${stats.completion_rate}%</span><span class="ps-label">Success Rate</span></div>
     <div class="ps-item"><span class="ps-num">${stats.overdue}</span><span class="ps-label">Overdue</span></div>
   `;
- 
+
   buildHeatmap(activity);
   buildMonthly(activity);
   buildDonut(tasks);
 }
- 
+
 function buildHeatmap(activity) {
   const today = new Date();
   const start = new Date(today);
   start.setDate(start.getDate() - 182);
- 
-  // align to Sunday
   while (start.getDay() !== 0) start.setDate(start.getDate() - 1);
- 
+
   const grid = document.getElementById('heatmapGrid');
   const monthsEl = document.getElementById('heatmapMonths');
   grid.innerHTML = '';
   let html = '';
-  let monthHtml = '';
   let weekIndex = 0;
- 
+
   const months = {};
   let d = new Date(start);
- 
+
   while (d <= today) {
     const key = d.toISOString().split('T')[0];
     const count = activity[key] || 0;
     const level = count === 0 ? 0 : count === 1 ? 1 : count <= 3 ? 2 : count <= 5 ? 3 : 4;
- 
+
     if (d.getDate() <= 7 && d.getDay() === 0) {
       months[weekIndex] = d.toLocaleString('default', {month:'short'});
     }
- 
+
     html += `<div class="h-cell" data-level="${level}" title="${key}: ${count} tasks"></div>`;
     d.setDate(d.getDate() + 1);
     if (d.getDay() === 0) weekIndex++;
   }
- 
+
   grid.innerHTML = html;
- 
-  // Months labels
+
   const totalWeeks = weekIndex + 1;
   let mHtml = '';
   for (let w = 0; w <= totalWeeks; w++) {
@@ -124,7 +451,7 @@ function buildHeatmap(activity) {
   monthsEl.style.gridTemplateColumns = `repeat(${totalWeeks}, 14px)`;
   grid.style.gridTemplateColumns = `repeat(${totalWeeks}, 14px)`;
 }
- 
+
 function buildMonthly(activity) {
   const monthly = {};
   Object.entries(activity).forEach(([d, v]) => {
@@ -133,7 +460,7 @@ function buildMonthly(activity) {
   });
   const sorted = Object.entries(monthly).sort().slice(-6);
   if (!sorted.length) { document.getElementById('monthlyChart').innerHTML = '<p class="empty-state">No data yet</p>'; return; }
- 
+
   const max = Math.max(...sorted.map(([,v])=>v));
   document.getElementById('monthlyChart').innerHTML = `
     <div class="bar-group">
@@ -147,17 +474,17 @@ function buildMonthly(activity) {
       }).join('')}
     </div>`;
 }
- 
+
 function buildDonut(tasks) {
   const counts = {high:0, medium:0, low:0};
   tasks.forEach(t => counts[t.priority]++);
   const total = tasks.length;
   const colors = {high:'#ef4444', medium:'#f59e0b', low:'#10b981'};
- 
+
   const canvas = document.getElementById('priorityDonut');
   const ctx = canvas.getContext('2d');
   const cx = 80, cy = 80, r = 60, ir = 40;
- 
+
   let startAngle = -Math.PI/2;
   const entries = Object.entries(counts);
   entries.forEach(([p, v]) => {
@@ -171,20 +498,18 @@ function buildDonut(tasks) {
     ctx.fill();
     startAngle += angle;
   });
- 
-  // donut hole
+
   ctx.beginPath();
   ctx.arc(cx, cy, ir, 0, 2*Math.PI);
   ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--card-bg') || '#fff';
   ctx.fill();
- 
-  // center text
+
   ctx.fillStyle = '#64748b';
   ctx.font = 'bold 20px DM Sans';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(total, cx, cy);
- 
+
   document.getElementById('donutLegend').innerHTML = entries.map(([p,v]) => `
     <div class="legend-item">
       <span class="legend-dot" style="background:${colors[p]}"></span>

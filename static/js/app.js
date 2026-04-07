@@ -25,7 +25,41 @@ document.addEventListener('click', (e) => {
     dd.classList.remove('open');
   }
 });
- 
+
+// ── Theme Toggle (Dark Mode) ────────────────────────
+function initTheme() {
+  const savedTheme = localStorage.getItem('taskflow-theme') || 'light';
+  applyTheme(savedTheme);
+}
+
+function applyTheme(theme) {
+  const isDark = theme === 'dark' || 
+                (theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  
+  if (isDark) {
+    document.body.classList.add('dark-mode');
+  } else {
+    document.body.classList.remove('dark-mode');
+  }
+  
+  const themeToggle = document.getElementById('themeToggle');
+  if (themeToggle) {
+    themeToggle.innerHTML = isDark ? 
+      '<i class="fa-solid fa-sun"></i>' : 
+      '<i class="fa-solid fa-moon"></i>';
+  }
+}
+
+document.getElementById('themeToggle')?.addEventListener('click', () => {
+  const currentTheme = localStorage.getItem('taskflow-theme') || 'light';
+  const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+  localStorage.setItem('taskflow-theme', newTheme);
+  applyTheme(newTheme);
+});
+
+window.applyTheme = applyTheme;
+initTheme();
+
 // ── Load Notifications ───────────────────────────────
 async function loadNotifications() {
   try {
